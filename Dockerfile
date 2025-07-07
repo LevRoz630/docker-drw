@@ -33,7 +33,6 @@ RUN echo "Host github.com\n\tStrictHostKeyChecking no\n\tIdentityFile /root/.ssh
 
 # Clone the repositories
 RUN git clone git@github.com:LevRoz630/drw-data.git /app/drw-data
-RUN git clone git@github.com:LevRoz630/drwcomp2025.git /app/drwcomp2025
 
 # Set up Python environment with uv
 WORKDIR /app/drwcomp2025
@@ -56,6 +55,15 @@ RUN git config user.name "Docker Developer" \
 
 # Create a script to activate the environment
 RUN echo '#!/bin/bash\n\
+if [ ! -d "/app/drwcomp2025/.venv" ]; then\n\
+    cd /app/drwcomp2025\n\
+    uv venv\n\
+    if [ -f "requirements.txt" ]; then\n\
+        uv pip install -r requirements.txt\n\
+    elif [ -f "pyproject.toml" ]; then\n\
+        uv pip install -e .\n\
+    fi\n\
+fi\n\
 source /app/drwcomp2025/.venv/bin/activate\n\
 cd /app/drwcomp2025\n\
 exec "$@"' > /usr/local/bin/activate-env \

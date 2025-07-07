@@ -1,6 +1,6 @@
 # DRW Development Environment
 
-This Docker setup provides a complete development environment for the DRW project with both repositories cloned and ready for development.
+This Docker setup provides a complete development environment for the DRW project. **You must clone the repositories on your host before starting the container.**
 
 ## Repositories
 
@@ -12,6 +12,13 @@ This Docker setup provides a complete development environment for the DRW projec
 - Docker
 - Docker Compose
 - SSH key `drw-code-deploy` (already present in the repository)
+- Both repositories cloned on your host:
+
+```bash
+# Clone the repositories on your host (outside Docker)
+git clone git@github.com:LevRoz630/drw-data.git
+git clone git@github.com:LevRoz630/drwcomp2025.git
+```
 
 ## Quick Start
 
@@ -28,12 +35,19 @@ docker-compose up -d
 docker-compose exec drw-dev bash
 ```
 
-### 2. Alternative: Run Interactive Shell
+### 2. Mounting Your Local Repositories
 
-```bash
-# Build and run in one command
-docker-compose run --rm drw-dev bash
+Edit your `docker-compose.yml` to mount your local repositories for live development. Uncomment or add the following lines under `volumes:`:
+
+```yaml
+    volumes:
+      - ./drw-code-deploy:/root/.ssh/id_ed25519:ro
+      - ./drw-code-deploy.pub:/root/.ssh/id_ed25519.pub:ro
+      - ./drw-data:/app/drw-data
+      - ./drwcomp2025:/app/drwcomp2025
 ```
+
+This ensures that any changes you make on your host are immediately available in the container, and vice versa. The `.git` directory is also shared, so you have full git integration in your IDE.
 
 ### 3. Run Specific Commands
 
@@ -48,7 +62,7 @@ docker-compose --profile run run --rm drw-run python your_script.py
 - **Python 3.11** with uv for dependency management
 - **Git** with SSH access configured
 - **Virtual environment** automatically created and activated
-- **Both repositories** cloned and ready
+- **Your repositories** mounted for live development
 
 ### Repository Structure
 ```
@@ -140,9 +154,8 @@ docker-compose exec drw-dev python -m pytest
 # Install new requirements
 docker-compose exec drw-dev uv pip install -r requirements.txt
 
-# Update repositories
-docker-compose exec drw-dev bash -c "cd /app/drw-data && git pull"
-docker-compose exec drw-dev bash -c "cd /app/drwcomp2025 && git pull"
+# Update repositories (from your host, or inside the container)
+git pull
 ```
 
 ## Troubleshooting
@@ -158,12 +171,7 @@ docker-compose exec drw-dev ssh -T git@github.com
 ```
 
 ### Repository Access Issues
-```bash
-# Re-clone repositories if needed
-docker-compose exec drw-dev bash -c "rm -rf /app/drw-data /app/drwcomp2025"
-docker-compose exec drw-dev bash -c "git clone git@github.com:LevRoz630/drw-data.git /app/drw-data"
-docker-compose exec drw-dev bash -c "git clone git@github.com:LevRoz630/drwcomp2025.git /app/drwcomp2025"
-```
+If you have issues with the repositories, ensure they are cloned on your host and mounted correctly. You should not need to clone them inside the container.
 
 ### Virtual Environment Issues
 ```bash
@@ -177,10 +185,10 @@ docker-compose exec drw-dev bash -c "cd /app/drwcomp2025 && rm -rf .venv && uv v
 .
 ├── Dockerfile              # Main Docker configuration
 ├── docker-compose.yml      # Docker Compose configuration
-├── .dockerignore          # Files to exclude from build
-├── README.md              # This file
-├── drw-code-deploy        # SSH private key
-└── drw-code-deploy.pub    # SSH public key
+├── .dockerignore           # Files to exclude from build
+├── README.md               # This file
+├── drw-code-deploy         # SSH private key
+└── drw-code-deploy.pub     # SSH public key
 ```
 
 ## Security Notes
@@ -202,11 +210,7 @@ ports:
 ```
 
 ### Mounting Additional Volumes
-Uncomment the volume mounts in `docker-compose.yml` for live development:
-```yaml
-volumes:
-  - ./repos/drwcomp2025:/app/drwcomp2025
-```
+Add more volume mounts in `docker-compose.yml` for additional repositories or data.
 
 ### Environment Variables
 Add environment variables in `docker-compose.yml`:

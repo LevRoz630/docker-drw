@@ -48,11 +48,6 @@ RUN if [ -f "requirements.txt" ]; then \
         uv venv; \
     fi
 
-# Set up Git configuration for the drwcomp2025 repository
-WORKDIR /app/drwcomp2025
-RUN git config user.name "Docker Developer" \
-    && git config user.email "developer@docker.local"
-
 # Create a script to activate the environment
 RUN echo '#!/bin/bash\n\
 if [ ! -d "/app/drwcomp2025/.venv" ]; then\n\

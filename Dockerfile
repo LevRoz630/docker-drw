@@ -1,43 +1,29 @@
-# Use Python 3.11 as base image
+# syntax=docker/dockerfile:1.4
 FROM python:3.11-slim
 
-# Set environment variables
 ENV DEBIAN_FRONTEND=noninteractive
 ENV PYTHONUNBUFFERED=1
 
-# Install system dependencies
 RUN apt-get update && apt-get install -y \
     git \
-    openssh-client \
+    git-lfs \
     curl \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-# Install uv for Python environment management
+RUN git lfs install
 RUN pip install uv
 
-# Create app directory
-WORKDIR /app
+WORKDIR /workspace-drw
 
-# Copy SSH keys for Git access
-COPY drw-code-deploy /root/.ssh/id_ed25519
-COPY drw-code-deploy.pub /root/.ssh/id_ed25519.pub
+# Use BuildKit secret for token
+RUN --mount=type=secret,id=GITHUB_TOKEN \
+    GITHUB_TOKEN=$(cat /run/secrets/GITHUB_TOKEN) && \
+    git clone https://$GITHUB_TOKEN@github.com/LevRoz630/drw-data.git /workspace-drw/drw-data && \
+    git clone https://$GITHUB_TOKEN@github.com/LevRoz630/drwcomp2025.git /workspace-drw/drwcomp2025
 
-# Set proper permissions for SSH keys
-RUN chmod 600 /root/.ssh/id_ed25519 \
-    && chmod 644 /root/.ssh/id_ed25519.pub
+WORKDIR /workspace-drw/drwcomp2025
 
-# Configure SSH to use the key
-RUN echo "Host github.com\n\tStrictHostKeyChecking no\n\tIdentityFile /root/.ssh/id_ed25519" > /root/.ssh/config \
-    && chmod 600 /root/.ssh/config
-
-# Clone the repositories
-RUN git clone git@github.com:LevRoz630/drw-data.git /app/drw-data
-
-# Set up Python environment with uv
-WORKDIR /app/drwcomp2025
-
-# Create virtual environment and install requirements if they exist
 RUN if [ -f "requirements.txt" ]; then \
         uv venv && \
         uv pip install -r requirements.txt; \
@@ -48,27 +34,21 @@ RUN if [ -f "requirements.txt" ]; then \
         uv venv; \
     fi
 
-# Create a script to activate the environment
 RUN echo '#!/bin/bash\n\
-if [ ! -d "/app/drwcomp2025/.venv" ]; then\n\
-    cd /app/drwcomp2025\n\
-    uv venv\n\
-    if [ -f "requirements.txt" ]; then\n\
-        uv pip install -r requirements.txt\n\
-    elif [ -f "pyproject.toml" ]; then\n\
-        uv pip install -e .\n\
-    fi\n\
+if [ ! -d "/workspace-drw/drwcomp2025/.venv" ]; then\n\
+  cd /workspace-drw/drwcomp2025\n\
+  uv venv\n\
+  if [ -f "requirements.txt" ]; then\n\
+    uv pip install -r requirements.txt\n\
+  elif [ -f "pyproject.toml" ]; then\n\
+    uv pip install -e .\n\
+  fi\n\
 fi\n\
-source /app/drwcomp2025/.venv/bin/activate\n\
-cd /app/drwcomp2025\n\
-exec "$@"' > /usr/local/bin/activate-env \
-    && chmod +x /usr/local/bin/activate-env
+source /workspace-drw/drwcomp2025/.venv/bin/activate\n\
+cd /workspace-drw/drwcomp2025\n\
+exec "$@"' > /usr/local/bin/activate-env && \
+    chmod +x /usr/local/bin/activate-env
 
-# Set the default working directory to the drwcomp2025 repository
-WORKDIR /app/drwcomp2025
-
-# Expose port 8000 for potential web applications
 EXPOSE 8000
 
-# Default command to activate environment and start bash
-CMD ["/usr/local/bin/activate-env", "/bin/bash"] 
+CMD ["/usr/local/bin/activate-env", "/bin/bash"]

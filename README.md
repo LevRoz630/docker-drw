@@ -23,6 +23,9 @@ This Docker image sets up a shared dev environment for the DRW 2025 project, clo
 
 **Add the access token to a token.txt file in the repo, then build the image (with buildkit and token):**  
 ```bash
-$env:DOCKER_BUILDKIT=1; docker build --secret id=GITHUB_TOKEN,src=./token.txt -t drw-docker-env .
 
+Windows PowerShell:
+$env:DOCKER_BUILDKIT=1; docker build --secret id=GITHUB_TOKEN,src=./token.txt -t drw-docker-env .
+Linux:
+DOCKER_BUILDKIT=1 docker build --secret id=GITHUB_TOKEN,src=./token.txt -t drw-docker-env .
 docker run -it --rm drw-docker-env

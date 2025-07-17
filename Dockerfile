@@ -35,4 +35,4 @@ RUN --mount=type=secret,id=GITHUB_TOKEN \
 
 RUN git lfs install --force
 
-CMD ["/usr/local/bin/activate-env", "/bin/bash"]
+CMD ["/bin/bash"]
